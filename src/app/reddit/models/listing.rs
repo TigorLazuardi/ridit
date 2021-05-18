@@ -1,13 +1,14 @@
+use super::meta::DownloadMeta;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
-pub struct Listing<'a> {
+pub struct Listing {
     pub kind: String,
     pub data: Data,
-    subreddit_name: &'a str,
+    subreddit_name: String,
 }
 
-impl<'a> Listing<'a> {
+impl Listing {
     pub fn get_urls(&self) -> Vec<&str> {
         let mut result: Vec<&str> = Vec::new();
         for data in self.data.children.iter() {
@@ -16,11 +17,35 @@ impl<'a> Listing<'a> {
         result
     }
 
-    pub fn get_subreddit_name(&self) -> &str {
-        self.subreddit_name
+    pub fn into_download_metas(self) -> Vec<DownloadMeta> {
+        let mut result: Vec<DownloadMeta> = Vec::new();
+        for children in self.data.children.into_iter() {
+            let data = children.data;
+            let image_size: (u32, u32);
+            match data.preview {
+                Some(preview) => {
+                    image_size = preview.get_image_size();
+                }
+                None => continue,
+            }
+            let meta = DownloadMeta {
+                subreddit_name: self.subreddit_name.clone(),
+                post_link: format!("https://reddit.com{}", data.permalink),
+                image_width: image_size.0,
+                image_height: image_size.1,
+                url: data.url,
+                nsfw: data.over18,
+            };
+            result.push(meta);
+        }
+        result
     }
 
-    pub fn set_subreddit_name(&mut self, s: &'a str) {
+    pub fn get_subreddit_name(&self) -> &str {
+        self.subreddit_name.as_str()
+    }
+
+    pub fn set_subreddit_name(&mut self, s: String) {
         self.subreddit_name = s;
     }
 }
@@ -136,6 +161,14 @@ pub struct Preview {
     pub enabled: bool,
 }
 
+impl Preview {
+    /// tuple looks like this `(width, height)`
+    pub fn get_image_size(&self) -> (u32, u32) {
+        let source = &self.images[0].source;
+        (source.width, source.height)
+    }
+}
+
 #[derive(Deserialize)]
 pub struct Image {
     pub source: Source,
@@ -147,8 +180,8 @@ pub struct Image {
 #[derive(Deserialize)]
 pub struct Source {
     pub url: String,
-    pub width: i64,
-    pub height: i64,
+    pub width: u32,
+    pub height: u32,
 }
 
 #[derive(Deserialize)]

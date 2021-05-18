@@ -1,7 +1,7 @@
 use super::sort::Sort;
 use serde::Deserialize;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Config {
     pub run: Run,
     pub downloads: Downloads,
@@ -9,29 +9,29 @@ pub struct Config {
     pub minimum_size: MinimumSize,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Run {
     pub hold_on_job_done: bool,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Downloads {
     pub subreddits: Vec<String>,
     pub sort: Sort,
-    pub concurrency: u32,
+    pub concurrency: usize,
     pub path: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct AspectRatio {
     pub enable: bool,
-    pub height_aspect: u32,
-    pub width_aspect: u32,
+    pub height_aspect: usize,
+    pub width_aspect: usize,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct MinimumSize {
     pub enable: bool,
-    pub minimum_height: u32,
-    pub minimum_width: u32,
+    pub minimum_height: usize,
+    pub minimum_width: usize,
 }

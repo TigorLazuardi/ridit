@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer};
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Sort {
     Hot,
     New,
