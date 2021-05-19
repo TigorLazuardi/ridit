@@ -1,39 +1,33 @@
 use super::domain::RedditRepository;
-use super::models::meta::DownloadMeta;
-use crate::app::config::model::Config;
-use rayon::ThreadPoolBuilder;
-use std::collections::HashMap;
-use std::sync::mpsc::{channel, Receiver, Sender};
-use std::thread;
+use super::models::{listing::Listing, meta::DownloadMeta};
+use crate::app::config::{model::Config, sort::Sort};
+use std::{error::Error, time::Duration};
+use ureq::Agent;
 
 pub struct Repository {
     config: Config,
+    agent: Agent,
 }
 
 impl Repository {
-    pub fn new(config: Config) -> Repository {
-        Repository { config }
+    pub fn new(config: Config, agent: Agent) -> Repository {
+        Repository { config, agent }
     }
 }
 
 impl RedditRepository for Repository {
-    fn get_downloads(&self) -> Receiver<DownloadMeta> {
-        let (tx, rx): (Sender<DownloadMeta>, Receiver<DownloadMeta>) = channel();
-        let cfg = self.config.clone();
-        thread::spawn(move || {
-            let pool = ThreadPoolBuilder::new()
-                .num_threads(cfg.downloads.concurrency)
-                .build()
-                .expect("failed to create threads");
-        });
-        rx
+    fn get_downloads(
+        &self,
+        subreddit_name: &str,
+        sort: Sort,
+        blocklist: &Vec<String>,
+    ) -> Result<Vec<DownloadMeta>, Box<dyn Error>> {
+        let listing_url = format!("https://reddit.com/r/{}/{}.json", subreddit_name, sort);
+        let listing: Listing = self.agent.get(listing_url.as_str()).call()?.into_json()?;
+        Ok(listing.into_download_metas(blocklist))
     }
 
-    fn download_images(
-        &self,
-        lists: Receiver<DownloadMeta>,
-        blocklist: HashMap<&str, &str>,
-    ) -> Receiver<DownloadMeta> {
+    fn download_images(&self, download: DownloadMeta) -> Result<(), Box<dyn Error>> {
         todo!();
     }
 }

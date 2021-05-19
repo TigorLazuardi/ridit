@@ -17,7 +17,7 @@ impl Listing {
         result
     }
 
-    pub fn into_download_metas(self) -> Vec<DownloadMeta> {
+    pub fn into_download_metas(self, blocklist: &Vec<String>) -> Vec<DownloadMeta> {
         let mut result: Vec<DownloadMeta> = Vec::new();
         for children in self.data.children.into_iter() {
             let data = children.data;

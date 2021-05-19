@@ -1,12 +1,16 @@
 use super::models::meta::DownloadMeta;
-use std::collections::HashMap;
-use std::sync::mpsc::Receiver;
+use crate::app::config::sort::Sort;
+use std::error::Error;
 
+/// Trait for RedditRepository. Must never touch with concurrency in this level
 pub trait RedditRepository {
-    fn get_downloads(&self) -> Receiver<DownloadMeta>;
-    fn download_images(
+    /// Get download list from listing subreddit.
+    fn get_downloads(
         &self,
-        lists: Receiver<DownloadMeta>,
-        blocklist: HashMap<&str, &str>,
-    ) -> Receiver<DownloadMeta>;
+        subreddit_name: &str,
+        sort: Sort,
+        blocklist: &Vec<String>,
+    ) -> Result<Vec<DownloadMeta>, Box<dyn Error>>;
+    /// Actually download the image
+    fn download_images(&self, download: DownloadMeta) -> Result<(), Box<dyn Error>>;
 }
