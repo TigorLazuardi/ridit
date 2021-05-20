@@ -1,17 +1,17 @@
 use super::domain::RedditRepository;
 use super::models::{listing::Listing, meta::DownloadMeta};
-use crate::app::config::{model::Config, sort::Sort};
-use std::{error::Error, time::Duration};
+use crate::app::config::sort::Sort;
+use std::error::Error;
+use std::io::Read;
 use ureq::Agent;
 
 pub struct Repository {
-    config: Config,
     agent: Agent,
 }
 
 impl Repository {
-    pub fn new(config: Config, agent: Agent) -> Repository {
-        Repository { config, agent }
+    pub fn new(agent: Agent) -> Repository {
+        Repository { agent }
     }
 }
 
@@ -27,7 +27,8 @@ impl RedditRepository for Repository {
         Ok(listing.into_download_metas(blocklist))
     }
 
-    fn download_images(&self, download: DownloadMeta) -> Result<(), Box<dyn Error>> {
-        todo!();
+    fn download_image(&self, download: &DownloadMeta) -> Result<Box<dyn Read>, Box<dyn Error>> {
+        let a = self.agent.get(download.url.as_str()).call()?.into_reader();
+        Ok(Box::new(a))
     }
 }

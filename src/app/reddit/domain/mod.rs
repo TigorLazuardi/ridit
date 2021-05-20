@@ -1,6 +1,7 @@
 use super::models::meta::DownloadMeta;
 use crate::app::config::sort::Sort;
 use std::error::Error;
+use std::io::Read;
 
 /// Trait for RedditRepository. Must never touch with concurrency in this level
 pub trait RedditRepository {
@@ -12,5 +13,5 @@ pub trait RedditRepository {
         blocklist: &Vec<String>,
     ) -> Result<Vec<DownloadMeta>, Box<dyn Error>>;
     /// Actually download the image
-    fn download_images(&self, download: DownloadMeta) -> Result<(), Box<dyn Error>>;
+    fn download_image(&self, download: &DownloadMeta) -> Result<Box<dyn Read>, Box<dyn Error>>;
 }
