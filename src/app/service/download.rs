@@ -12,17 +12,19 @@ impl DownloadService {
         DownloadService { repo, config }
     }
 
-    pub async fn start_download(&self) -> Result<(), Box<dyn Error>> {
+    pub async fn start_download(&self) {
         for subreddit in self.config.downloads.subreddits.iter() {
             let blocklist: Vec<String> = Vec::new();
-            let downloads = self
+            match self
                 .repo
                 .get_downloads(subreddit.as_str(), self.config.downloads.sort, &blocklist)
-                .await?;
-
-            let responses = self.repo.download_images(&downloads).await?;
-            for response in responses.iter() {}
+                .await
+            {
+                Err(err) => println!("Failed to get listing from {}. Cause: {}", subreddit, err),
+                Ok(downloads) => {
+                    let responses = self.repo.download_images(&downloads).await;
+                }
+            }
         }
-        Ok(())
     }
 }

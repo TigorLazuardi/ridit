@@ -1,3 +1,9 @@
+use std::{
+    ffi::{OsStr, OsString},
+    path::{Path, PathBuf},
+    str::FromStr,
+};
+
 use super::meta::DownloadMeta;
 use serde::Deserialize;
 
@@ -40,6 +46,12 @@ impl Listing {
                 image_height: image_size.1,
                 url: data.url,
                 nsfw: data.over18,
+                filename: data.id
+                    + PathBuf::from_str(data.url.as_str())
+                        .unwrap_or_else(|_| PathBuf::new().join("dummy.jpg"))
+                        .extension()
+                        .and_then(OsStr::to_str)
+                        .unwrap_or("jpg"),
             };
             result.push(meta);
         }

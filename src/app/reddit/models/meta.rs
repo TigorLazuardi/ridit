@@ -5,4 +5,5 @@ pub struct DownloadMeta {
     pub image_width: u32,
     pub post_link: String,
     pub nsfw: bool,
+    pub filename: String,
 }
