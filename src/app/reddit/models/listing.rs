@@ -21,6 +21,11 @@ impl Listing {
         let mut result: Vec<DownloadMeta> = Vec::new();
         for children in self.data.children.into_iter() {
             let data = children.data;
+            for v in blocklist.iter() {
+                if data.url == *v {
+                    continue;
+                }
+            }
             let image_size: (u32, u32);
             match data.preview {
                 Some(preview) => {

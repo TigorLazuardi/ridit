@@ -3,7 +3,8 @@ use app::config::{self, default};
 use std::error::Error;
 use std::process::exit;
 
-pub fn execute() {
+#[tokio::main]
+pub async fn execute() {
     if let Err(err) = print_config() {
         println!("failed to create config: {}", err);
         exit(1);

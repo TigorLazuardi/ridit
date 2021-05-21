@@ -1,34 +1,44 @@
-use super::domain::RedditRepository;
 use super::models::{listing::Listing, meta::DownloadMeta};
 use crate::app::config::sort::Sort;
+use reqwest::{self, Response};
 use std::error::Error;
-use std::io::Read;
-use ureq::Agent;
 
+#[derive(Clone)]
 pub struct Repository {
-    agent: Agent,
+    client: reqwest::Client,
 }
 
 impl Repository {
-    pub fn new(agent: Agent) -> Repository {
-        Repository { agent }
+    pub fn new(client: reqwest::Client) -> Repository {
+        Repository { client }
     }
-}
 
-impl RedditRepository for Repository {
-    fn get_downloads(
+    pub async fn get_downloads(
         &self,
         subreddit_name: &str,
         sort: Sort,
         blocklist: &Vec<String>,
     ) -> Result<Vec<DownloadMeta>, Box<dyn Error>> {
         let listing_url = format!("https://reddit.com/r/{}/{}.json", subreddit_name, sort);
-        let listing: Listing = self.agent.get(listing_url.as_str()).call()?.into_json()?;
+        let listing: Listing = self
+            .client
+            .get(listing_url.as_str())
+            .send()
+            .await?
+            .json()
+            .await?;
         Ok(listing.into_download_metas(blocklist))
     }
 
-    fn download_image(&self, download: &DownloadMeta) -> Result<Box<dyn Read>, Box<dyn Error>> {
-        let a = self.agent.get(download.url.as_str()).call()?.into_reader();
-        Ok(Box::new(a))
+    pub async fn download_images(
+        &self,
+        downloads: &Vec<DownloadMeta>,
+    ) -> Result<Vec<Response>, Box<dyn Error>> {
+        let mut result = Vec::new();
+        for download in downloads.iter() {
+            let a = self.client.get(download.url.as_str()).send().await?;
+            result.push(a);
+        }
+        Ok(result)
     }
 }
