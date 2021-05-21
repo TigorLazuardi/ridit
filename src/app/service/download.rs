@@ -21,6 +21,7 @@ impl DownloadService {
                 .await?;
 
             let responses = self.repo.download_images(&downloads).await?;
+            for response in responses.iter() {}
         }
         Ok(())
     }
