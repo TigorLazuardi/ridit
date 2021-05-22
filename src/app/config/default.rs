@@ -18,11 +18,11 @@ sort = "hot"
 # Download concurrency. How many valid images to download at once
 concurrency = 4
 
-# Download location. Default $HOME/ridit/downloads on unix system
-# On windows it should default to C:\Users\<user>\ridit\Downloads
-# Windows support forward slash (/), but if you want to use backslash (\), make sure to use double backslash.
-# e.g. "C:\\Users\\<user>\\ridit\\downloads"
-path = "~/ridit/downloads"
+# Download location. Defaults to download folder of where the app is running from
+path = "downloads"
+
+# Connection Timeout. Skips download if cannot establishing connection in the allocated time. Value is in milliseconds.
+timeout = 5000
 
 [aspect_ratio]
 enable = true
@@ -39,6 +39,11 @@ ratio_range = 0.2
 enable = true
 minimum_height = 1080
 minimum_width = 1920
+
+# Common users should have no need to change these values.
+[advanced]
+# User Agent is a way for reddit to know who is calling their services.
+user_agent = "ridit"
 
 "##;
 

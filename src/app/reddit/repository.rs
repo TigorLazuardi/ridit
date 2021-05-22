@@ -1,13 +1,9 @@
 use super::models::{listing::Listing, meta::DownloadMeta};
 use crate::app::config::sort::Sort;
+use async_fs::File;
+use futures_lite::AsyncWriteExt;
 use reqwest::{self, Response};
 use std::{error::Error, path::Path};
-use std::{fs::write, io::Write};
-use std::{
-    fs::File,
-    path::{self, PathBuf},
-};
-use tokio::task;
 use tokio_retry::strategy::FixedInterval;
 use tokio_retry::{self, Retry};
 
@@ -28,7 +24,7 @@ impl Repository {
         blocklist: &Vec<String>,
     ) -> Result<Vec<DownloadMeta>, Box<dyn Error>> {
         println!("fetching listing from {}", subreddit_name);
-        let stg = FixedInterval::from_millis(200).take(3);
+        let stg = FixedInterval::from_millis(200).take(2);
         Retry::spawn(stg, || {
             self.internal_get_downloads(subreddit_name, sort, blocklist)
         })
@@ -42,6 +38,7 @@ impl Repository {
         blocklist: &Vec<String>,
     ) -> Result<Vec<DownloadMeta>, Box<dyn Error>> {
         let listing_url = format!("https://reddit.com/r/{}/{}.json", subreddit_name, sort);
+        println!("downloading listing: {}", listing_url);
 
         let listing: Listing = self
             .client
@@ -75,34 +72,47 @@ impl Repository {
 
     pub async fn store_images(
         &self,
-        location: String,
+        location: &str,
         metas: Vec<(Response, DownloadMeta)>,
     ) -> Vec<DownloadMeta> {
-        let v: Vec<DownloadMeta> = Vec::new();
+        let mut v: Vec<DownloadMeta> = Vec::new();
         for (response, meta) in metas.into_iter() {
-            let loc = location.clone().as_str();
-            task::spawn(async {
-                let loc = Path::new(loc).join(meta.filename);
-                match File::create(location.as_str()) {
-                    Ok(mut f) => {
-                        while let chunk = response.chunk().await {
-                            match chunk {
-                                Ok(b) => match b {
-                                    Some(b) => {}
-                                    None => break,
-                                },
-                                Err(err) => {
-                                    println!("failed to write to file");
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    Err(err) => println!("failed to create "),
-                }
-            })
-            .await;
+            match self.inner_store_image(location, response, meta).await {
+                Ok(m) => v.push(m),
+                Err(err) => println!("error storing image: {}", err),
+            }
         }
         v
+    }
+
+    async fn inner_store_image(
+        &self,
+        location: &str,
+        mut response: Response,
+        meta: DownloadMeta,
+    ) -> Result<DownloadMeta, Box<dyn Error>> {
+        let full_file_name = vec![meta.filename.clone(), meta.ext.clone()].join("");
+        let full_loc = Path::new(location)
+            .join(meta.subreddit_name.as_str())
+            .join(full_file_name.as_str());
+        let mut f = File::create(full_loc).await?;
+        'looper: loop {
+            let chunk = response.chunk().await?;
+            if let Some(b) = chunk {
+                if let Err(err) = f.write(&b[..]).await {
+                    println!(
+                        "failed to write to write to {}. cause: {}",
+                        meta.filename, err
+                    );
+                    break 'looper;
+                }
+            } else {
+                if let Err(err) = f.flush().await {
+                    println!("failed to flush file {}. cause: {}", meta.filename, err)
+                };
+                break 'looper;
+            }
+        }
+        Ok(meta)
     }
 }

@@ -1,6 +1,5 @@
 use crate::app::config::model::Config;
 use crate::app::reddit::repository::Repository;
-use std::error::Error;
 
 pub struct DownloadService {
     repo: Repository,
@@ -22,7 +21,18 @@ impl DownloadService {
             {
                 Err(err) => println!("Failed to get listing from {}. Cause: {}", subreddit, err),
                 Ok(downloads) => {
-                    let responses = self.repo.download_images(&downloads).await;
+                    let responses = self.repo.download_images(downloads).await;
+                    let d = self
+                        .repo
+                        .store_images(self.config.downloads.path.as_str(), responses)
+                        .await;
+
+                    for ddd in d.into_iter() {
+                        println!(
+                            "success download image [{}] {}",
+                            ddd.subreddit_name, ddd.url
+                        );
+                    }
                 }
             }
         }

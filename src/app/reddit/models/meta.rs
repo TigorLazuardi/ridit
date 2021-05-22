@@ -6,4 +6,7 @@ pub struct DownloadMeta {
     pub post_link: String,
     pub nsfw: bool,
     pub filename: String,
+    pub title: String,
+    pub author: String,
+    pub ext: String,
 }

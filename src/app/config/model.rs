@@ -7,6 +7,7 @@ pub struct Config {
     pub downloads: Downloads,
     pub aspect_ratio: AspectRatio,
     pub minimum_size: MinimumSize,
+    pub advanced: Advanced,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -20,6 +21,7 @@ pub struct Downloads {
     pub sort: Sort,
     pub concurrency: usize,
     pub path: String,
+    pub timeout: u64,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -34,4 +36,9 @@ pub struct MinimumSize {
     pub enable: bool,
     pub minimum_height: usize,
     pub minimum_width: usize,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Advanced {
+    pub user_agent: String,
 }
