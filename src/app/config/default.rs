@@ -15,9 +15,6 @@ subreddits = ["wallpaper", "wallpapers"]
 # sort. valid values: "hot", "new", "top", "controversial", "rising" (case insensitive). Default or Invalid values are treated as "hot"
 sort = "hot"
 
-# Download concurrency. How many valid images to download at once
-concurrency = 4
-
 # Download location. Defaults to download folder of where the app is running from
 path = "downloads"
 

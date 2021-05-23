@@ -19,7 +19,6 @@ pub struct Run {
 pub struct Downloads {
     pub subreddits: Vec<String>,
     pub sort: Sort,
-    pub concurrency: usize,
     pub path: String,
     pub timeout: u64,
 }
@@ -29,6 +28,7 @@ pub struct AspectRatio {
     pub enable: bool,
     pub height_aspect: usize,
     pub width_aspect: usize,
+    pub ratio_range: f32,
 }
 
 #[derive(Deserialize, Debug, Clone)]

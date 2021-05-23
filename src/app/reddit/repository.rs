@@ -1,20 +1,21 @@
 use super::models::{listing::Listing, meta::DownloadMeta};
-use crate::app::config::sort::Sort;
+use crate::app::config::{model::Config, sort::Sort};
 use async_fs::File;
 use futures_lite::AsyncWriteExt;
 use reqwest::{self, Response};
-use std::{error::Error, path::Path};
+use std::{error::Error, path::Path, rc::Rc};
 use tokio_retry::strategy::FixedInterval;
 use tokio_retry::{self, Retry};
 
 #[derive(Clone)]
 pub struct Repository {
     client: reqwest::Client,
+    config: Rc<Config>,
 }
 
 impl Repository {
-    pub fn new(client: reqwest::Client) -> Repository {
-        Repository { client }
+    pub fn new(client: reqwest::Client, config: Rc<Config>) -> Repository {
+        Repository { client, config }
     }
 
     pub async fn get_downloads(
@@ -47,7 +48,7 @@ impl Repository {
             .json()
             .await?;
 
-        Ok(listing.into_download_metas(blocklist))
+        Ok(listing.into_download_metas(blocklist, self.config.clone()))
     }
 
     pub async fn download_images(

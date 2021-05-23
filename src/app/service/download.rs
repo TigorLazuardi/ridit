@@ -1,13 +1,14 @@
 use crate::app::config::model::Config;
 use crate::app::reddit::repository::Repository;
+use std::rc::Rc;
 
 pub struct DownloadService {
     repo: Repository,
-    config: Config,
+    config: Rc<Config>,
 }
 
 impl DownloadService {
-    pub fn new(repo: Repository, config: Config) -> DownloadService {
+    pub fn new(repo: Repository, config: Rc<Config>) -> DownloadService {
         DownloadService { repo, config }
     }
 

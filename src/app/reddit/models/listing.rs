@@ -1,3 +1,7 @@
+use std::rc::Rc;
+
+use crate::app::config::model::Config;
+
 use super::meta::DownloadMeta;
 use serde::Deserialize;
 
@@ -8,7 +12,11 @@ pub struct Listing {
 }
 
 impl Listing {
-    pub fn into_download_metas(self, blocklist: &Vec<String>) -> Vec<DownloadMeta> {
+    pub fn into_download_metas(
+        self,
+        blocklist: &Vec<String>,
+        config: Rc<Config>,
+    ) -> Vec<DownloadMeta> {
         let mut result: Vec<DownloadMeta> = Vec::new();
         for children in self.data.children.into_iter() {
             let data = children.data;
@@ -31,6 +39,14 @@ impl Listing {
                 continue;
             }
 
+            if !Listing::passed_aspect_ratio(image_size, config.clone()) {
+                continue;
+            }
+
+            if !Listing::passed_mininum_size(image_size, config.clone()) {
+                continue;
+            }
+
             let ext = slice_from_end(data.url.as_str(), 4);
             let meta = DownloadMeta {
                 subreddit_name: data.subreddit,
@@ -47,6 +63,25 @@ impl Listing {
             result.push(meta);
         }
         result
+    }
+
+    fn passed_aspect_ratio(image_size: (u32, u32), config: Rc<Config>) -> bool {
+        if !config.aspect_ratio.enable {
+            return true;
+        }
+        let ar = config.aspect_ratio.width_aspect as f32 / config.aspect_ratio.height_aspect as f32;
+        let min_ratio = ar - config.aspect_ratio.ratio_range;
+        let max_ratio = ar + config.aspect_ratio.ratio_range;
+        let image_ratio = image_size.0 as f32 / image_size.1 as f32;
+        image_ratio >= min_ratio && image_ratio <= max_ratio
+    }
+
+    fn passed_mininum_size(image_size: (u32, u32), config: Rc<Config>) -> bool {
+        if !config.minimum_size.enable {
+            return true;
+        }
+        image_size.0 >= config.minimum_size.minimum_width as u32
+            && image_size.1 >= config.minimum_size.minimum_height as u32
     }
 }
 

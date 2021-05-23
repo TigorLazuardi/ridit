@@ -8,10 +8,10 @@ use reqwest::{
     header::{HeaderMap, HeaderValue},
     Client,
 };
-use std::process::exit;
 use std::{error::Error, time::Duration};
 use std::{fs::create_dir_all, io::Read};
 use std::{io::Write, path::Path};
+use std::{process::exit, rc::Rc};
 
 #[tokio::main]
 pub async fn execute() {
@@ -36,8 +36,9 @@ pub async fn execute() {
         .build()
         .unwrap();
 
-    let repo = Repository::new(client);
-    let service = DownloadService::new(repo, c);
+    let conf = Rc::new(c);
+    let repo = Repository::new(client, conf.clone());
+    let service = DownloadService::new(repo, conf.clone());
 
     service.start_download().await;
 
