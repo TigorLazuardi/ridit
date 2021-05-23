@@ -21,6 +21,8 @@ pub struct Downloads {
     pub sort: Sort,
     pub path: String,
     pub timeout: u64,
+    pub nsfw: bool,
+    pub proceed_download_on_file_exist: bool,
 }
 
 #[derive(Deserialize, Debug, Clone)]

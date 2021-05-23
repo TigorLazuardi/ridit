@@ -23,6 +23,9 @@ impl Listing {
             if data.is_video {
                 continue;
             }
+            if data.over_18 && !config.downloads.nsfw {
+                continue;
+            }
             for v in blocklist.iter() {
                 if data.url == *v {
                     continue;
@@ -47,7 +50,6 @@ impl Listing {
                 continue;
             }
 
-            let ext = slice_from_end(data.url.as_str(), 4);
             let meta = DownloadMeta {
                 subreddit_name: data.subreddit,
                 post_link: format!("https://reddit.com{}", data.permalink),
@@ -57,8 +59,7 @@ impl Listing {
                 nsfw: data.over_18,
                 title: data.title,
                 author: data.author,
-                filename: data.id,
-                ext: ext.unwrap_or(".jpg").to_string(),
+                filename: Listing::get_filename_from_url(data.url.as_str()),
             };
             result.push(meta);
         }
@@ -83,11 +84,15 @@ impl Listing {
         image_size.0 >= config.minimum_size.minimum_width as u32
             && image_size.1 >= config.minimum_size.minimum_height as u32
     }
+
+    fn get_filename_from_url(url: &str) -> String {
+        url.split("/").last().unwrap().to_string()
+    }
 }
 
-fn slice_from_end(s: &str, n: usize) -> Option<&str> {
-    s.char_indices().rev().nth(n).map(|(i, _)| &s[i..])
-}
+// fn slice_from_end(s: &str, n: usize) -> Option<&str> {
+//     s.char_indices().rev().nth(n).map(|(i, _)| &s[i..])
+// }
 
 #[derive(Deserialize)]
 pub struct Data {

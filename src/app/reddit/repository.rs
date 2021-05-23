@@ -37,7 +37,10 @@ impl Repository {
         sort: Sort,
         blocklist: &Vec<String>,
     ) -> Result<Vec<DownloadMeta>, Box<dyn Error>> {
-        let listing_url = format!("https://reddit.com/r/{}/{}.json", subreddit_name, sort);
+        let listing_url = format!(
+            "https://reddit.com/r/{}/{}.json?limit=100",
+            subreddit_name, sort
+        );
         println!("[{}] try fetching listing: {}", subreddit_name, listing_url);
 
         let listing: Listing = self
@@ -53,11 +56,25 @@ impl Repository {
 
     pub async fn download_images(
         &self,
+        location: &str,
         downloads: Vec<DownloadMeta>,
     ) -> Vec<(Response, DownloadMeta)> {
         let mut result = Vec::new();
         for download in downloads.into_iter() {
-            println!("downloading {}", download.url);
+            let loc = download.get_file_location(location);
+            if loc.exists() && !self.config.downloads.proceed_download_on_file_exist {
+                println!(
+                    "[{}] file already exists: {}. skipping download from {}",
+                    download.subreddit_name,
+                    loc.display(),
+                    download.url,
+                );
+                continue;
+            }
+            println!(
+                "[{}] marking for download: {}",
+                download.subreddit_name, download.url
+            );
             let stg = FixedInterval::from_millis(200).take(3);
             match Retry::spawn(stg, || self.client.get(download.url.as_str()).send()).await {
                 Ok(res) => result.push((res, download)),
@@ -77,9 +94,14 @@ impl Repository {
     ) -> Vec<DownloadMeta> {
         let mut v: Vec<DownloadMeta> = Vec::new();
         for (response, meta) in metas.into_iter() {
-            match self.inner_store_image(location, response, meta).await {
-                Ok(m) => v.push(m),
-                Err(err) => println!("error storing image: {}", err),
+            match self.inner_store_image(location, response, &meta).await {
+                Ok(_) => v.push(meta),
+                Err(err) => println!(
+                    "[{subreddit}] error storing image {filename}. cause: {error}",
+                    subreddit = meta.subreddit_name,
+                    filename = meta.filename,
+                    error = err
+                ),
             }
         }
         v
@@ -89,12 +111,11 @@ impl Repository {
         &self,
         location: &str,
         mut response: Response,
-        meta: DownloadMeta,
-    ) -> Result<DownloadMeta, Box<dyn Error>> {
-        let full_file_name = vec![meta.filename.clone(), meta.ext.clone()].join("");
+        meta: &DownloadMeta,
+    ) -> Result<(), Box<dyn Error>> {
         let full_loc = Path::new(location)
             .join(meta.subreddit_name.as_str())
-            .join(full_file_name.as_str());
+            .join(meta.filename.as_str());
         let mut f = File::create(full_loc.clone()).await?;
         'looper: loop {
             let chunk = response.chunk().await?;
@@ -109,8 +130,9 @@ impl Repository {
             } else {
                 match f.flush().await {
                     Ok(_) => println!(
-                        "[{}] finished downloading image: {}",
+                        "[{}] finished downloading {}. save location: {}",
                         meta.subreddit_name,
+                        meta.url,
                         full_loc.display()
                     ),
                     Err(err) => println!(
@@ -123,6 +145,6 @@ impl Repository {
                 break 'looper;
             }
         }
-        Ok(meta)
+        Ok(())
     }
 }

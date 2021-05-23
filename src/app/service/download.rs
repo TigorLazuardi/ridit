@@ -22,7 +22,10 @@ impl DownloadService {
             {
                 Err(err) => println!("[{}] Failed to get listing. Cause: {}", subreddit, err),
                 Ok(downloads) => {
-                    let responses = self.repo.download_images(downloads).await;
+                    let responses = self
+                        .repo
+                        .download_images(self.config.downloads.path.as_str(), downloads)
+                        .await;
                     self.repo
                         .store_images(self.config.downloads.path.as_str(), responses)
                         .await;
