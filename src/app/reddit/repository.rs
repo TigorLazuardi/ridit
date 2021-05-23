@@ -1,7 +1,8 @@
 use super::models::{listing::Listing, meta::DownloadMeta};
 use crate::app::config::{model::Config, sort::Sort};
-use async_fs::File;
+use async_fs::{self, File};
 use futures_lite::AsyncWriteExt;
+use path_absolutize::*;
 use reqwest::{self, Response};
 use std::{error::Error, path::Path, rc::Rc};
 use tokio_retry::strategy::FixedInterval;
@@ -113,9 +114,7 @@ impl Repository {
         mut response: Response,
         meta: &DownloadMeta,
     ) -> Result<(), Box<dyn Error>> {
-        let full_loc = Path::new(location)
-            .join(meta.subreddit_name.as_str())
-            .join(meta.filename.as_str());
+        let full_loc = meta.get_file_location(location);
         let mut f = File::create(full_loc.clone()).await?;
         'looper: loop {
             let chunk = response.chunk().await?;
@@ -129,12 +128,22 @@ impl Repository {
                 }
             } else {
                 match f.flush().await {
-                    Ok(_) => println!(
-                        "[{}] finished downloading {}. save location: {}",
-                        meta.subreddit_name,
-                        meta.url,
-                        full_loc.display()
-                    ),
+                    Ok(_) => {
+                        println!(
+                            "[{}] finished downloading {}. save location: {}",
+                            meta.subreddit_name,
+                            meta.url,
+                            full_loc.display()
+                        );
+                        if let Err(err) = self.create_symlink(meta).await {
+                            println!(
+                                "[{}] failed to create symlink for file {}. cause: {}",
+                                meta.subreddit_name,
+                                full_loc.display(),
+                                err
+                            );
+                        };
+                    }
                     Err(err) => println!(
                         "[{}] failed to flush file {}. cause: {}",
                         meta.subreddit_name,
@@ -145,6 +154,31 @@ impl Repository {
                 break 'looper;
             }
         }
+        Ok(())
+    }
+
+    async fn create_symlink(&self, meta: &DownloadMeta) -> Result<(), Box<dyn Error>> {
+        if !self.config.symbolic_link.enable {
+            return Ok(());
+        }
+
+        let download_path = Path::new(self.config.downloads.path.as_str())
+            .absolutize()?
+            .to_str()
+            .unwrap()
+            .to_string();
+
+        if self.config.symbolic_link.use_custom_path {
+            let custom_path = self.config.symbolic_link.custom_path.as_str();
+            let target = Path::new(custom_path).join(meta.filename.as_str());
+            async_fs::create_dir_all(custom_path).await?;
+            symlink::symlink_file(meta.get_file_location(download_path.as_str()), target)?;
+            return Ok(());
+        }
+        let joined_path = Path::new(download_path.as_str()).join("_joined");
+        async_fs::create_dir_all(joined_path.clone()).await?;
+        let target = joined_path.join(meta.filename.as_str());
+        symlink::symlink_file(meta.get_file_location(download_path.as_str()), target)?;
         Ok(())
     }
 }

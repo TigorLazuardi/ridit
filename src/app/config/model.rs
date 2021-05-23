@@ -8,6 +8,7 @@ pub struct Config {
     pub aspect_ratio: AspectRatio,
     pub minimum_size: MinimumSize,
     pub advanced: Advanced,
+    pub symbolic_link: SymbolicLink,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -21,6 +22,7 @@ pub struct Downloads {
     pub sort: Sort,
     pub path: String,
     pub timeout: u64,
+    pub download_timeout: u64,
     pub nsfw: bool,
     pub proceed_download_on_file_exist: bool,
 }
@@ -43,4 +45,11 @@ pub struct MinimumSize {
 #[derive(Deserialize, Debug, Clone)]
 pub struct Advanced {
     pub user_agent: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct SymbolicLink {
+    pub enable: bool,
+    pub use_custom_path: bool,
+    pub custom_path: String,
 }

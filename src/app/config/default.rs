@@ -27,6 +27,8 @@ path = "downloads"
 # Connection Timeout. Skips download if failed to establish connection for downloading in the allocated time. Value is in milliseconds.
 # This is not timeout for downloading image. Your downloads won't fail if the download duration takes longer than the timeout.
 timeout = 5000
+# Stops and restart downloading if downloading image takes longer than this value. Adjust to your internet speed.
+download_timeout = 30000
 
 # The app checks if file already exist. If it does, it will skip the download of the image. Set to true to force redownloading
 proceed_download_on_file_exist = false
@@ -50,6 +52,19 @@ ratio_range = 0.5
 enable = true
 minimum_height = 1080
 minimum_width = 1920
+
+# Symbolic Link in this app means the app can make an image appear in two different folder but without copying the file.
+# It's like a shortcut to a file or program but the os and other programs treats symbolic link like actual file.
+# The main use for symbolic link in this app is to gather images from different subreddit folders into one folder without copying the actual file.
+# This is because windows 10 can only slideshow from one folder, and this allows windows 10 to create slideshow from different subreddit folders.
+[symbolic_link]
+enable = true
+# by default symbolic links are pointed to _joined folder inside download path
+# enabling custom path allows the user to use different symbolic link location
+use_custom_path = false
+# This is the default path used.
+# FYI, windows support forward slash as handling subfolder
+custom_path = "downloads/_join"
 
 # Common users should have no need to change these values.
 [advanced]
