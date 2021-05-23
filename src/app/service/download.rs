@@ -19,20 +19,12 @@ impl DownloadService {
                 .get_downloads(subreddit.as_str(), self.config.downloads.sort, &blocklist)
                 .await
             {
-                Err(err) => println!("Failed to get listing from {}. Cause: {}", subreddit, err),
+                Err(err) => println!("[{}] Failed to get listing. Cause: {}", subreddit, err),
                 Ok(downloads) => {
                     let responses = self.repo.download_images(downloads).await;
-                    let d = self
-                        .repo
+                    self.repo
                         .store_images(self.config.downloads.path.as_str(), responses)
                         .await;
-
-                    for ddd in d.into_iter() {
-                        println!(
-                            "success download image [{}] {}",
-                            ddd.subreddit_name, ddd.url
-                        );
-                    }
                 }
             }
         }

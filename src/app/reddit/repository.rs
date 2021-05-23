@@ -23,7 +23,6 @@ impl Repository {
         sort: Sort,
         blocklist: &Vec<String>,
     ) -> Result<Vec<DownloadMeta>, Box<dyn Error>> {
-        println!("fetching listing from {}", subreddit_name);
         let stg = FixedInterval::from_millis(200).take(2);
         Retry::spawn(stg, || {
             self.internal_get_downloads(subreddit_name, sort, blocklist)
@@ -38,7 +37,7 @@ impl Repository {
         blocklist: &Vec<String>,
     ) -> Result<Vec<DownloadMeta>, Box<dyn Error>> {
         let listing_url = format!("https://reddit.com/r/{}/{}.json", subreddit_name, sort);
-        println!("downloading listing: {}", listing_url);
+        println!("[{}] try fetching listing: {}", subreddit_name, listing_url);
 
         let listing: Listing = self
             .client
@@ -62,8 +61,8 @@ impl Repository {
             match Retry::spawn(stg, || self.client.get(download.url.as_str()).send()).await {
                 Ok(res) => result.push((res, download)),
                 Err(err) => println!(
-                    "failed downloading image from {}. Cause: {}",
-                    download.url, err
+                    "[{}] failed downloading image from {}. Cause: {}",
+                    download.subreddit_name, download.url, err
                 ),
             }
         }
@@ -95,7 +94,7 @@ impl Repository {
         let full_loc = Path::new(location)
             .join(meta.subreddit_name.as_str())
             .join(full_file_name.as_str());
-        let mut f = File::create(full_loc).await?;
+        let mut f = File::create(full_loc.clone()).await?;
         'looper: loop {
             let chunk = response.chunk().await?;
             if let Some(b) = chunk {
@@ -107,9 +106,19 @@ impl Repository {
                     break 'looper;
                 }
             } else {
-                if let Err(err) = f.flush().await {
-                    println!("failed to flush file {}. cause: {}", meta.filename, err)
-                };
+                match f.flush().await {
+                    Ok(_) => println!(
+                        "[{}] finished downloading image: {}",
+                        meta.subreddit_name,
+                        full_loc.display()
+                    ),
+                    Err(err) => println!(
+                        "[{}] failed to flush file {}. cause: {}",
+                        meta.subreddit_name,
+                        full_loc.display(),
+                        err
+                    ),
+                }
                 break 'looper;
             }
         }
