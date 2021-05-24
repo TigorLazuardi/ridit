@@ -35,7 +35,7 @@ pub async fn execute() {
     let arc_repo = Arc::new(repo);
     let service = DownloadService::new(arc_repo.clone(), conf.clone());
 
-    service.start_concurrent_download().await;
+    service.start_download().await;
 
     pause(hold);
 }

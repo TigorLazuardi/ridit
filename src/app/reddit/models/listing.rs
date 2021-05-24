@@ -12,11 +12,7 @@ pub struct Listing {
 }
 
 impl Listing {
-    pub fn into_download_metas(
-        self,
-        blocklist: &Vec<String>,
-        config: Arc<Config>,
-    ) -> Vec<DownloadMeta> {
+    pub fn into_download_metas(self, config: Arc<Config>) -> Vec<DownloadMeta> {
         let mut result: Vec<DownloadMeta> = Vec::new();
         for children in self.data.children.into_iter() {
             let data = children.data;
@@ -25,11 +21,6 @@ impl Listing {
             }
             if data.over_18 && !config.downloads.nsfw {
                 continue;
-            }
-            for v in blocklist.iter() {
-                if data.url == *v {
-                    continue;
-                }
             }
             let image_size: (u32, u32);
             if let Some(preview) = data.preview {

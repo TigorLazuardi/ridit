@@ -1,6 +1,6 @@
 use crate::app::config::model::Config;
 use crate::app::reddit::repository::Repository;
-use std::sync::{mpsc, Arc};
+use std::sync::Arc;
 use tokio::runtime::Handle;
 use tokio::sync::oneshot;
 
@@ -15,28 +15,6 @@ impl DownloadService {
     }
 
     pub async fn start_download(&self) {
-        for subreddit in self.config.downloads.subreddits.iter() {
-            let blocklist: Vec<String> = Vec::new();
-            match self
-                .repo
-                .get_downloads(subreddit.as_str(), self.config.downloads.sort, &blocklist)
-                .await
-            {
-                Err(err) => println!("[{}] Failed to get listing. Cause: {}", subreddit, err),
-                Ok(downloads) => {
-                    let responses = self
-                        .repo
-                        .download_images(self.config.downloads.path.as_str(), downloads)
-                        .await;
-                    self.repo
-                        .store_images(self.config.downloads.path.as_str(), responses)
-                        .await;
-                }
-            }
-        }
-    }
-
-    pub async fn start_concurrent_download(&self) {
         let mut receivers = Vec::new();
         for subreddit in self.config.downloads.subreddits.iter() {
             let (tx, rx) = oneshot::channel();
@@ -46,9 +24,8 @@ impl DownloadService {
             let subreddit = subreddit.clone();
             rayon::spawn(move || {
                 handle.spawn(async move {
-                    let blocklist: Vec<String> = Vec::new();
                     let downloads = match repo
-                        .get_downloads(subreddit.as_str(), config.downloads.sort, &blocklist)
+                        .get_downloads(subreddit.as_str(), config.downloads.sort)
                         .await
                     {
                         Err(err) => {
