@@ -1,17 +1,15 @@
 mod app;
 use app::{
     config::{self, default, thread::configure_concurrency},
-    reddit::{client::new_client, repository::Repository},
-    service::download::DownloadService,
+    reddit::{agent::new_agent, repository_sync::Repository},
+    service::download_sync::DownloadService,
 };
 use std::error::Error;
 use std::process::exit;
-use std::sync::Arc;
 use std::{fs::create_dir_all, io::Read};
 use std::{io::Write, path::Path};
 
-#[tokio::main]
-pub async fn execute() {
+pub fn execute() {
     match print_config() {
         Ok(new) => {
             if new {
@@ -27,15 +25,13 @@ pub async fn execute() {
     let c = config::read_config().unwrap();
     let hold = c.run.hold_on_job_done;
     create_dirs(c.downloads.path.as_str(), &c.downloads.subreddits).unwrap();
-    configure_concurrency(4).unwrap();
-    let client = new_client(&c).unwrap();
+    configure_concurrency(0).unwrap();
+    let agent = new_agent(&c);
 
-    let conf = Arc::new(c);
-    let repo = Repository::new(client, conf.clone());
-    let arc_repo = Arc::new(repo);
-    let service = DownloadService::new(arc_repo.clone(), conf.clone());
+    let repo = Repository::new(agent, c.clone());
+    let service = DownloadService::new(repo, c);
 
-    service.start_download().await;
+    service.start_download();
 
     pause(hold);
 }
