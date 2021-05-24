@@ -1,5 +1,7 @@
 use std::path::{Path, PathBuf};
 
+use path_absolutize::Absolutize;
+
 pub struct DownloadMeta {
     pub url: String,
     pub subreddit_name: String,
@@ -17,5 +19,8 @@ impl DownloadMeta {
         Path::new(base_location)
             .join(self.subreddit_name.as_str())
             .join(self.filename.as_str())
+            .absolutize()
+            .unwrap()
+            .to_path_buf()
     }
 }

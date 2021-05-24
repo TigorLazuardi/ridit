@@ -1,17 +1,14 @@
 mod app;
 use app::{
-    config::{self, default, model::Config},
-    reddit::repository::Repository,
+    config::{self, default, thread::configure_concurrency},
+    reddit::{client::new_client, repository::Repository},
     service::download::DownloadService,
 };
-use reqwest::{
-    header::{HeaderMap, HeaderValue},
-    Client,
-};
-use std::{error::Error, time::Duration};
+use std::error::Error;
+use std::process::exit;
+use std::sync::Arc;
 use std::{fs::create_dir_all, io::Read};
 use std::{io::Write, path::Path};
-use std::{process::exit, rc::Rc};
 
 #[tokio::main]
 pub async fn execute() {
@@ -30,31 +27,17 @@ pub async fn execute() {
     let c = config::read_config().unwrap();
     let hold = c.run.hold_on_job_done;
     create_dirs(c.downloads.path.as_str(), &c.downloads.subreddits).unwrap();
-    let client = Client::builder()
-        .connect_timeout(Duration::from_millis(c.downloads.timeout))
-        .timeout(Duration::from_millis(c.downloads.download_timeout))
-        .default_headers(default_headers(&c))
-        .build()
-        .unwrap();
+    configure_concurrency(4).unwrap();
+    let client = new_client(&c).unwrap();
 
-    let conf = Rc::new(c);
+    let conf = Arc::new(c);
     let repo = Repository::new(client, conf.clone());
-    let service = DownloadService::new(repo, conf.clone());
+    let arc_repo = Arc::new(repo);
+    let service = DownloadService::new(arc_repo.clone(), conf.clone());
 
     service.start_download().await;
 
-    if hold {
-        pause()
-    }
-}
-
-fn default_headers(c: &Config) -> HeaderMap {
-    let mut h = HeaderMap::new();
-    h.insert(
-        "USER-AGENT",
-        HeaderValue::from_str(c.advanced.user_agent.as_str()).unwrap(),
-    );
-    h
+    pause(hold);
 }
 
 fn create_dirs(location: &str, subreddits: &Vec<String>) -> Result<(), Box<dyn Error>> {
@@ -75,12 +58,14 @@ fn print_config() -> Result<bool, Box<dyn Error>> {
     Ok(false)
 }
 
-fn pause() {
-    let mut stdin = std::io::stdin();
-    let mut stdout = std::io::stdout();
+fn pause(pause: bool) {
+    if pause {
+        let mut stdin = std::io::stdin();
+        let mut stdout = std::io::stdout();
 
-    write!(stdout, "\nPress any key to continue...").unwrap();
-    stdout.flush().unwrap();
+        write!(stdout, "\nPress any key to continue...").unwrap();
+        stdout.flush().unwrap();
 
-    let _ = stdin.read(&mut [0u8]).unwrap();
+        let _ = stdin.read(&mut [0u8]).unwrap();
+    }
 }
