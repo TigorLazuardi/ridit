@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::app::config::model::Config;
 
 use super::meta::DownloadMeta;
@@ -12,7 +10,7 @@ pub struct Listing {
 }
 
 impl Listing {
-    pub fn into_download_metas(self, config: Arc<Config>) -> Vec<DownloadMeta> {
+    pub fn into_download_metas(self, config: &Config) -> Vec<DownloadMeta> {
         let mut result: Vec<DownloadMeta> = Vec::new();
         for children in self.data.children.into_iter() {
             let data = children.data;
@@ -33,11 +31,11 @@ impl Listing {
                 continue;
             }
 
-            if !Listing::passed_aspect_ratio(image_size, config.clone()) {
+            if !Listing::passed_aspect_ratio(image_size, config) {
                 continue;
             }
 
-            if !Listing::passed_mininum_size(image_size, config.clone()) {
+            if !Listing::passed_mininum_size(image_size, config) {
                 continue;
             }
 
@@ -57,7 +55,7 @@ impl Listing {
         result
     }
 
-    fn passed_aspect_ratio(image_size: (u32, u32), config: Arc<Config>) -> bool {
+    fn passed_aspect_ratio(image_size: (u32, u32), config: &Config) -> bool {
         if !config.aspect_ratio.enable {
             return true;
         }
@@ -68,7 +66,7 @@ impl Listing {
         image_ratio >= min_ratio && image_ratio <= max_ratio
     }
 
-    fn passed_mininum_size(image_size: (u32, u32), config: Arc<Config>) -> bool {
+    fn passed_mininum_size(image_size: (u32, u32), config: &Config) -> bool {
         if !config.minimum_size.enable {
             return true;
         }
