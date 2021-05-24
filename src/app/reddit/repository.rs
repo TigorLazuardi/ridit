@@ -89,6 +89,100 @@ impl Repository {
         result
     }
 
+    pub async fn download_image(&self, download: &DownloadMeta) -> Option<Response> {
+        let loc = download.get_file_location(self.config.downloads.path.as_str());
+        if loc.exists() && !self.config.downloads.proceed_download_on_file_exist {
+            println!(
+                "[{}] file already exists: {}. skipping download from {}",
+                download.subreddit_name,
+                loc.display(),
+                download.url,
+            );
+            return None;
+        };
+        println!(
+            "[{}] downloading: {}",
+            download.subreddit_name, download.url
+        );
+        let stg = FixedInterval::from_millis(200).take(3);
+        match Retry::spawn(stg, || self.client.get(download.url.as_str()).send()).await {
+            Ok(res) => Some(res),
+            Err(err) => {
+                println!(
+                    "[{}] failed downloading image from {}. Cause: {}",
+                    download.subreddit_name, download.url, err
+                );
+                None
+            }
+        }
+    }
+
+    pub async fn store_image(&self, mut resp: Response, download: DownloadMeta) {
+        let full_loc = download.get_file_location(self.config.downloads.path.as_str());
+        let mut f = match File::create(full_loc.clone()).await {
+            Ok(f) => f,
+            Err(err) => {
+                println!(
+                    "[{}] failed creating file {}. cause: {}",
+                    download.subreddit_name,
+                    full_loc.display(),
+                    err
+                );
+                return;
+            }
+        };
+
+        'looper: loop {
+            let chunk = match resp.chunk().await {
+                Ok(c) => c,
+                Err(err) => {
+                    println!(
+                        "[{}] response is closed from server when writing to file {}. cause: {}",
+                        download.subreddit_name,
+                        full_loc.display(),
+                        err
+                    );
+                    return;
+                }
+            };
+            if let Some(chunk) = chunk {
+                if let Err(err) = f.write(&chunk[..]).await {
+                    println!(
+                        "failed to write to write to {}. cause: {}",
+                        download.filename, err
+                    );
+                    break 'looper;
+                }
+            } else {
+                match f.flush().await {
+                    Ok(_) => {
+                        println!(
+                            "[{}] finished downloading {}. save location: {}",
+                            download.subreddit_name,
+                            download.url,
+                            full_loc.display()
+                        );
+                        if let Err(err) = self.create_symlink(&download).await {
+                            println!(
+                                "[{}] failed to create symlink for file {}. cause: {}",
+                                download.subreddit_name,
+                                full_loc.display(),
+                                err
+                            );
+                        };
+                    }
+                    Err(err) => println!(
+                        "[{}] failed to flush file {}. cause: {}",
+                        download.subreddit_name,
+                        full_loc.display(),
+                        err
+                    ),
+                }
+                break 'looper;
+            }
+        }
+    }
+
     pub async fn store_images(
         &self,
         location: &str,
