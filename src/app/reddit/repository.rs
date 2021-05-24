@@ -4,18 +4,19 @@ use async_fs::{self, File};
 use futures_lite::AsyncWriteExt;
 use path_absolutize::*;
 use reqwest::{self, Response};
-use std::{error::Error, path::Path, rc::Rc};
+use std::sync::Arc;
+use std::{error::Error, path::Path};
 use tokio_retry::strategy::FixedInterval;
 use tokio_retry::{self, Retry};
 
 #[derive(Clone)]
 pub struct Repository {
     client: reqwest::Client,
-    config: Rc<Config>,
+    config: Arc<Config>,
 }
 
 impl Repository {
-    pub fn new(client: reqwest::Client, config: Rc<Config>) -> Repository {
+    pub fn new(client: reqwest::Client, config: Arc<Config>) -> Repository {
         Repository { client, config }
     }
 

@@ -5,9 +5,10 @@ use app::{
     service::download::DownloadService,
 };
 use std::error::Error;
+use std::process::exit;
+use std::sync::Arc;
 use std::{fs::create_dir_all, io::Read};
 use std::{io::Write, path::Path};
-use std::{process::exit, rc::Rc};
 
 #[tokio::main]
 pub async fn execute() {
@@ -28,7 +29,7 @@ pub async fn execute() {
     create_dirs(c.downloads.path.as_str(), &c.downloads.subreddits).unwrap();
     let client = new_client(&c).unwrap();
 
-    let conf = Rc::new(c);
+    let conf = Arc::new(c);
     let repo = Repository::new(client, conf.clone());
     let service = DownloadService::new(repo, conf.clone());
 

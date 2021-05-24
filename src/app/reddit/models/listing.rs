@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::app::config::model::Config;
 
@@ -15,7 +15,7 @@ impl Listing {
     pub fn into_download_metas(
         self,
         blocklist: &Vec<String>,
-        config: Rc<Config>,
+        config: Arc<Config>,
     ) -> Vec<DownloadMeta> {
         let mut result: Vec<DownloadMeta> = Vec::new();
         for children in self.data.children.into_iter() {
@@ -66,7 +66,7 @@ impl Listing {
         result
     }
 
-    fn passed_aspect_ratio(image_size: (u32, u32), config: Rc<Config>) -> bool {
+    fn passed_aspect_ratio(image_size: (u32, u32), config: Arc<Config>) -> bool {
         if !config.aspect_ratio.enable {
             return true;
         }
@@ -77,7 +77,7 @@ impl Listing {
         image_ratio >= min_ratio && image_ratio <= max_ratio
     }
 
-    fn passed_mininum_size(image_size: (u32, u32), config: Rc<Config>) -> bool {
+    fn passed_mininum_size(image_size: (u32, u32), config: Arc<Config>) -> bool {
         if !config.minimum_size.enable {
             return true;
         }
