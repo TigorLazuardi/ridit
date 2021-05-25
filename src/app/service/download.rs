@@ -1,4 +1,4 @@
-use crate::app::{config::model::Config, reddit::repository_sync::Repository};
+use crate::app::{config::model::Config, reddit::repository::Repository};
 use anyhow::Result;
 use rayon::prelude::*;
 use std::sync::{mpsc, Arc};

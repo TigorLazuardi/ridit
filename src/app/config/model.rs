@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use super::sort::Sort;
 use serde::Deserialize;
 
@@ -9,6 +11,13 @@ pub struct Config {
     pub minimum_size: MinimumSize,
     pub advanced: Advanced,
     pub symbolic_link: SymbolicLink,
+}
+
+impl Config {
+    pub fn get_download_path(&self) -> PathBuf {
+        let b = shellexpand::full(self.downloads.path.as_str()).unwrap();
+        PathBuf::new().join(b.as_ref())
+    }
 }
 
 #[derive(Deserialize, Debug, Clone)]

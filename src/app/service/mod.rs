@@ -1,1 +1,1 @@
-pub mod download_sync;
+pub mod download;

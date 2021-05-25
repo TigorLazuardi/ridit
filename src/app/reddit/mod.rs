@@ -1,3 +1,3 @@
 pub mod agent;
 pub mod models;
-pub mod repository_sync;
+pub mod repository;

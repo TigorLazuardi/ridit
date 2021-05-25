@@ -26,6 +26,7 @@ impl Repository {
 
     pub fn get_listing(&self, subreddit: &str, sort: Sort) -> Result<Vec<DownloadMeta>> {
         let listing_url = format!("https://reddit.com/r/{}/{}.json?limit=100", subreddit, sort);
+        println!("[{}] fetching listing from {}", subreddit, listing_url);
         let listing = retry(Fixed::from_millis(200).take(3), || {
             self.agent.get(listing_url.as_str()).call()
         })
@@ -87,11 +88,9 @@ impl Repository {
             return Ok(());
         }
 
-        let download_path = Path::new(self.config.downloads.path.as_str())
-            .absolutize()?
-            .to_path_buf();
+        let download_path = self.config.get_download_path();
 
-        let file_path = download.get_file_location(self.config.downloads.path.as_str());
+        let file_path = download.get_file_location(download_path.to_str().unwrap());
 
         if self.config.symbolic_link.use_custom_path {
             let custom_path = Path::new(self.config.symbolic_link.custom_path.as_str())

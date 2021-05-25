@@ -1,8 +1,8 @@
 mod app;
 use app::{
     config::{self, default, thread::configure_concurrency},
-    reddit::{agent::new_agent, repository_sync::Repository},
-    service::download_sync::DownloadService,
+    reddit::{agent::new_agent, repository::Repository},
+    service::download::DownloadService,
 };
 use std::error::Error;
 use std::process::exit;
@@ -24,7 +24,15 @@ pub fn execute() {
     }
     let c = config::read_config().unwrap();
     let hold = c.run.hold_on_job_done;
-    create_dirs(c.downloads.path.as_str(), &c.downloads.subreddits).unwrap();
+    create_dirs(
+        c.get_download_path(),
+        c.downloads
+            .subreddits
+            .iter()
+            .map(|l| l.as_str())
+            .collect::<Vec<&str>>(),
+    )
+    .unwrap();
     configure_concurrency(0).unwrap();
     let agent = new_agent(&c);
 
@@ -36,9 +44,9 @@ pub fn execute() {
     pause(hold);
 }
 
-fn create_dirs(location: &str, subreddits: &Vec<String>) -> Result<(), Box<dyn Error>> {
+fn create_dirs<P: AsRef<Path>>(location: P, subreddits: Vec<&str>) -> Result<(), Box<dyn Error>> {
     for subs in subreddits {
-        let p = Path::new(location).join(subs.as_str());
+        let p = Path::new(location.as_ref()).join(subs);
         create_dir_all(p)?;
     }
     Ok(())
