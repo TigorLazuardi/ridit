@@ -1,7 +1,8 @@
+use anyhow::{Context, Error, Result};
 use home;
 use std::fs::{self, File};
+use std::io::Write;
 use std::path::PathBuf;
-use std::{error::Error, io::Write};
 
 static DEFAULT_CONFIG: &'static str = r##"
 [run]
@@ -75,8 +76,8 @@ user_agent = "ridit"
 
 static FILENAME: &'static str = "ridit.toml";
 
-pub fn get_xdg_config_dir() -> Result<PathBuf, Box<dyn Error>> {
-    let mut p = home::home_dir().ok_or("failed to detect user directory")?;
+pub fn get_xdg_config_dir() -> Result<PathBuf> {
+    let mut p = home::home_dir().ok_or(Error::msg("failed to detect user directory"))?;
     if std::env::consts::OS == "windows" {
         p.push("AppData");
         p.push("local");
@@ -88,8 +89,8 @@ pub fn get_xdg_config_dir() -> Result<PathBuf, Box<dyn Error>> {
     Ok(p)
 }
 
-pub fn get_xdg_config_path() -> Result<PathBuf, Box<dyn Error>> {
-    let mut p = home::home_dir().ok_or("failed to detect user directory")?;
+pub fn get_xdg_config_path() -> Result<PathBuf> {
+    let mut p = home::home_dir().ok_or(Error::msg("failed to detect user directory"))?;
     if std::env::consts::OS == "windows" {
         p.push("AppData");
         p.push("local");
@@ -102,21 +103,14 @@ pub fn get_xdg_config_path() -> Result<PathBuf, Box<dyn Error>> {
     Ok(p)
 }
 
-pub fn get_relative_config_dir() -> Result<PathBuf, Box<dyn Error>> {
-    match std::env::current_dir() {
-        Ok(p) => Ok(p),
-        Err(err) => Err(Box::new(err)),
-    }
+pub fn get_relative_config_dir() -> Result<PathBuf> {
+    std::env::current_dir()
+        .map_err(|err| Error::new(err))
+        .with_context(|| "failed getting current application directory")
 }
 
-pub fn get_relative_config_path() -> Result<PathBuf, Box<dyn Error>> {
-    match std::env::current_dir() {
-        Ok(mut p) => {
-            p.push(FILENAME);
-            Ok(p)
-        }
-        Err(err) => Err(Box::new(err)),
-    }
+pub fn get_relative_config_path() -> Result<PathBuf> {
+    Ok(get_relative_config_dir()?.join(FILENAME))
 }
 
 /// check config exsits. First bool in tuple is relative dir, second bool in tuple is xdg dir
@@ -131,7 +125,7 @@ pub fn check_config_exists() -> (bool, bool) {
     res
 }
 
-pub fn print_config() -> Result<PathBuf, Box<dyn Error>> {
+pub fn print_config() -> Result<PathBuf> {
     let b = DEFAULT_CONFIG.trim().as_bytes();
 
     // Writing to application dir if it has permissions

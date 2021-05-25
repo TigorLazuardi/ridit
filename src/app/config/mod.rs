@@ -1,4 +1,4 @@
-pub mod default;
+mod default;
 pub mod model;
 pub mod sort;
 pub mod thread;

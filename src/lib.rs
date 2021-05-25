@@ -1,13 +1,13 @@
 mod app;
+use anyhow::Result;
 use app::{
-    config::{self, default, thread::configure_concurrency},
+    config::{self, model::Config, thread::configure_concurrency},
     reddit::{agent::new_agent, repository::Repository},
     service::download::DownloadService,
 };
-use std::error::Error;
+use std::io::Read;
+use std::io::Write;
 use std::process::exit;
-use std::{fs::create_dir_all, io::Read};
-use std::{io::Write, path::Path};
 
 pub fn execute() {
     match print_config() {
@@ -24,15 +24,7 @@ pub fn execute() {
     }
     let c = config::read_config().unwrap();
     let hold = c.run.hold_on_job_done;
-    create_dirs(
-        c.get_download_path(),
-        c.downloads
-            .subreddits
-            .iter()
-            .map(|l| l.as_str())
-            .collect::<Vec<&str>>(),
-    )
-    .unwrap();
+    c.create_dirs().unwrap();
     configure_concurrency(0).unwrap();
     let agent = new_agent(&c);
 
@@ -44,18 +36,10 @@ pub fn execute() {
     pause(hold);
 }
 
-fn create_dirs<P: AsRef<Path>>(location: P, subreddits: Vec<&str>) -> Result<(), Box<dyn Error>> {
-    for subs in subreddits {
-        let p = Path::new(location.as_ref()).join(subs);
-        create_dir_all(p)?;
-    }
-    Ok(())
-}
-
-fn print_config() -> Result<bool, Box<dyn Error>> {
-    let (rel, xdg) = default::check_config_exists();
+fn print_config() -> Result<bool> {
+    let (rel, xdg) = Config::check_config_exists();
     if !rel && !xdg {
-        let p = default::print_config()?;
+        let p = Config::print_config()?;
         println!("config created on {}", p.display());
         return Ok(true);
     }

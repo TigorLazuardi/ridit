@@ -1,8 +1,10 @@
 use std::path::PathBuf;
 
-use super::sort::Sort;
+use super::{default, sort::Sort};
+use anyhow::{Context, Result};
 use path_absolutize::Absolutize;
 use serde::Deserialize;
+use std::fs;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {
@@ -22,6 +24,24 @@ impl Config {
             .absolutize()
             .unwrap()
             .to_path_buf()
+    }
+
+    pub fn create_dirs(&self) -> Result<()> {
+        let p = self.get_download_path();
+        for subreddit in self.downloads.subreddits.iter() {
+            let p = p.join(subreddit.as_str());
+            fs::create_dir_all(p.clone())
+                .with_context(|| format!("failed to create directory on {}", p.display()))?;
+        }
+        Ok(())
+    }
+
+    pub fn print_config() -> Result<PathBuf> {
+        default::print_config()
+    }
+
+    pub fn check_config_exists() -> (bool, bool) {
+        default::check_config_exists()
     }
 }
 

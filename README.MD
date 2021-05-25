@@ -32,6 +32,7 @@ Still WIP Alpha.
 
 1. Got permission denied error. Try to change download path destination to somewhere your user has permission to. Make sure it also not pointing to a file.
 2. Download failed. Try increasing the download_timeout in `ridit.toml`
+3. Get Symlink Error (os error 1314). Try running the application as elevated (Administrator) user.
 
 # TODO
 
