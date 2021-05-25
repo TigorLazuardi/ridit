@@ -6,7 +6,7 @@ edition = "2018"
 keywords = ["reddit", "image", "downloader"]
 license = "MIT"
 name = "ridit"
-version = "0.1.1"
+version = "0.2.1"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

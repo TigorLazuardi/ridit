@@ -30,7 +30,7 @@ impl DownloadService {
                 {
                     Ok(v) => Some(v),
                     Err(err) => {
-                        println!("{}", err);
+                        println!("{:?}", err);
                         None
                     }
                 }
@@ -69,7 +69,7 @@ impl DownloadService {
         drop(tx);
         loop {
             match rx.recv() {
-                Ok(Err(err)) => println!("{}", err),
+                Ok(Err(err)) => println!("{:?}", err),
                 Ok(_) => {}
                 Err(_) => break,
             }
