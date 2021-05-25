@@ -88,9 +88,9 @@ impl Repository {
             return Ok(());
         }
 
-        let download_path = self.config.get_download_path();
+        let download_path = self.config.get_download_path().display().to_string();
 
-        let file_path = download.get_file_location(download_path.to_str().unwrap());
+        let file_path = download.get_file_location(download_path.as_str());
 
         if self.config.symbolic_link.use_custom_path {
             let custom_path = Path::new(self.config.symbolic_link.custom_path.as_str())
@@ -99,21 +99,29 @@ impl Repository {
             fs::create_dir_all(custom_path.as_path())
                 .with_context(|| format!("failed to create folder on {}", custom_path.display()))?;
             let target = custom_path.join(download.filename.as_str());
-            symlink::symlink_file(
-                download.get_file_location(
-                    download_path
-                        .to_str()
-                        .ok_or_else(|| Error::msg("unsupported path"))?,
-                ),
-                target,
-            )?;
+            let src = download.get_file_location(download_path.as_str());
+            symlink::symlink_file(src.clone(), target.clone()).with_context(|| {
+                format!(
+                    "[{}] failed to create symlink from {} to {}",
+                    download.subreddit_name,
+                    src.display(),
+                    target.display()
+                )
+            })?;
             return Ok(());
         }
 
-        let joined_path = download_path.join("_joined");
+        let joined_path = Path::new(download_path.as_str()).join("_joined");
         fs::create_dir_all(joined_path.as_path())?;
         let target = joined_path.join(download.filename.as_str());
-        symlink::symlink_file(file_path, target)?;
+        symlink::symlink_file(file_path.clone(), target.clone()).with_context(|| {
+            format!(
+                "[{}] failed to create symlink from {} to {}",
+                download.subreddit_name,
+                file_path.display(),
+                target.display()
+            )
+        })?;
         Ok(())
     }
 }
