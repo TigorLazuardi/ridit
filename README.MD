@@ -1,12 +1,12 @@
 # Ridit
 
-I have not found a reddit image downloader that supports my needs like configurable aspect ratio downloads with minimum size.
+Reddit Image Downloader CLI. It downloads images from subreddits.
+
+I have not found a reddit image downloader that supports my needs like configurable aspect ratio downloads with minimum size. Hence I make one.
 
 This tool is mainly intended to download wallpapers and put them in neat locations.
 
-Reddit Image Downloader CLI. It downloads images from subreddits.
-
-Still WIP Alpha.
+Current status is Still WIP Alpha.
 
 # Features
 

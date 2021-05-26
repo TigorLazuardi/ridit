@@ -15,13 +15,13 @@ pub struct DownloadMeta {
 }
 
 impl DownloadMeta {
-    pub fn get_file_location<P: AsRef<str>>(&self, base_location: P) -> PathBuf {
-        let b = shellexpand::full(base_location.as_ref())
+    pub fn get_file_location<P: AsRef<Path>>(&self, base_location: P) -> PathBuf {
+        let b = shellexpand::full(base_location.as_ref().to_str().unwrap())
             .unwrap()
             .to_string();
         Path::new(b.as_str())
-            .join(self.subreddit_name.as_str())
-            .join(self.filename.as_str())
+            .join(&self.subreddit_name)
+            .join(&self.filename)
             .absolutize()
             .unwrap()
             .to_path_buf()

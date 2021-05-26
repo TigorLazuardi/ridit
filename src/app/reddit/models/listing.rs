@@ -75,7 +75,7 @@ impl Listing {
     }
 
     fn get_filename_from_url(url: &str) -> String {
-        url.split("/").last().unwrap().to_string()
+        url.split("/").last().unwrap().split("?").take(1).collect()
     }
 }
 

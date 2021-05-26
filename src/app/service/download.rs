@@ -42,6 +42,10 @@ impl DownloadService {
         while let Some(Some(downloads)) = a.next() {
             for download in downloads.into_iter() {
                 let zelf = self.clone();
+                let loc = download.get_file_location(zelf.config.get_download_path());
+                if loc.exists() && !zelf.config.downloads.proceed_download_on_file_exist {
+                    continue;
+                }
                 let tx = tx.clone();
                 rayon::spawn(move || {
                     let result = || -> Result<()> {
@@ -55,9 +59,7 @@ impl DownloadService {
                             "[{}] image downloaded from {} to {}",
                             download.subreddit_name,
                             download.url,
-                            download
-                                .get_file_location(zelf.config.downloads.path.as_str())
-                                .display()
+                            loc.display(),
                         );
                         zelf.repo.create_symlink(&download)?;
                         Ok(())

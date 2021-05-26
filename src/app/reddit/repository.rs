@@ -1,6 +1,6 @@
 use std::{fs, fs::File, path::Path};
 
-use anyhow::{Context, Error, Result};
+use anyhow::{Context, Result};
 use path_absolutize::Absolutize;
 use retry::delay::Fixed;
 use retry::retry;
@@ -42,15 +42,6 @@ impl Repository {
     }
 
     pub fn download_image(&self, download: &DownloadMeta) -> Result<Response> {
-        let loc = download.get_file_location(self.config.downloads.path.as_str());
-        if loc.exists() && !self.config.downloads.proceed_download_on_file_exist {
-            return Err(Error::msg(format!(
-                "[{}] file already exists: {}. skipping download from {}",
-                download.subreddit_name,
-                loc.display(),
-                download.url,
-            )));
-        };
         let response = retry(Fixed::from_millis(200).take(3), || {
             self.agent.get(download.url.as_str()).call()
         })
@@ -64,7 +55,7 @@ impl Repository {
     }
 
     pub fn store_image(&self, response: Response, download: &DownloadMeta) -> Result<()> {
-        let full_loc = download.get_file_location(self.config.downloads.path.as_str());
+        let full_loc = download.get_file_location(self.config.get_download_path());
         let mut f = File::create(full_loc.clone()).with_context(|| {
             format!(
                 "[{}] failed creating file on {}",
